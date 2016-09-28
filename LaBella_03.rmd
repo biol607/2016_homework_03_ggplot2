@@ -60,15 +60,18 @@ The standard errors would be less as well. With the same idea as the standard de
 
 ####2.1) Load the data using readr and make the Month_Names column into a factor whose levels are in order of month.
 ``` {r, echo = TRUE}
-sea_ice <- read_csv("../sea_ice.csv")
+sea_ice <- read_csv("../NH_seaice_extent_monthly_1978_2016.csv")
+sea_ice
+sea_ice$Month
 sea_ice <- sea_ice %>%
-  mutate(month_name = fct_inorder(month_name))
-levels(sea_ice$month_name)
+  arrange(Month) %>%
+  mutate(Month_Name = fct_inorder(Month_Name))
+levels(sea_ice$Month_Name)
 ```
 
 ####2.2) Make a boxplot showing the variability in sea ice extent every month.
 ``` {r, echo = TRUE}
-sea_ice_plot <- ggplot(sea_ice, mapping = aes(x = month_name, y = extent)) 
+sea_ice_plot <- ggplot(sea_ice, mapping = aes(x = Month_Name, y = Extent)) 
 sea_ice_plot +
   geom_boxplot()
 ```
@@ -77,15 +80,15 @@ sea_ice_plot +
 ####2.3) Use dplyr to get the annual minimum sea ice. Plot minimum ice by year, and add a trendline (either a smooth spline or a straight line).
 ``` {r, echo = TRUE}
 sea_ice_min <- sea_ice %>%
-  group_by(year) %>%
-  slice(which.min(extent)) 
+  group_by(Year) %>%
+  slice(which.min(Extent)) 
 list(sea_ice_min)
 
-sea_ice_min_plot <- ggplot(data = sea_ice_min, mapping = aes(x = year, y = extent))
+sea_ice_min_plot <- ggplot(data = sea_ice_min, mapping = aes(x = Year, y = Extent))
 sea_ice_min_plot +
   geom_jitter() +
   theme_bw(base_size = 10) +
-  stat_smooth(method = "gam", color = "red")
+  stat_smooth(method = "lm", color = "red")
 
 ```
 
@@ -93,10 +96,13 @@ sea_ice_min_plot +
 ####2.4) Plot sea ice by year, with different lines for different months. Then, add a new column (mutate!) using the ggplot2 function cut_interval(Month, n=4) - this will create four even bins. Seasons, if you will. Use facet_wrap on the same plot and split the plot into seasons.
 ``` {r, echo = TRUE}
 library(viridis)
-sea_ice_month <- ggplot(sea_ice, mapping = aes(year, extent, group = month, color = month))
-sea_ice_month +
-  geom_line() +
-  scale_color_viridis()
+library(ggthemes)
+
+ggplot(data = sea_ice) +
+  geom_line(mapping = aes(Year, Extent, color = Month_Name)) +
+  scale_color_hue() +
+  theme_bw()
+
 
 #############
 season_names <- list(
@@ -109,11 +115,12 @@ season_labeller <- function(variable,value){
   return(season_names[value])}
 
 sea_ice_season <- sea_ice %>%
-  mutate(season = cut_interval(month, n=4))
+  mutate(season = cut_interval(Month, n=4))
+
+sea_ice_season
 ggplot(sea_ice_season) +
-  geom_line(mapping = aes(year, extent, group = month, color = month)) +
+  geom_line(mapping = aes(Year, Extent, color = Month_Name)) +
   facet_wrap(~season, labeller=season_labeller) +
-  scale_color_viridis() +
   theme_bw()
 
 ```
@@ -121,8 +128,8 @@ ggplot(sea_ice_season) +
 
 ####2.5) Last, make a line plot of sea ice by month. Gussy it up with colors by year, a different theme, and whatever other annotations, changes to axes, etc., you think best show the story of this data.
 ``` {r, echo = TRUE}
-ggplot(data=sea_ice, mapping = aes(month_name, extent, color = year, size = 8)) +
-  geom_line() +
+ggplot(data = sea_ice) +
+  geom_line(mapping = aes(Month_Name, Extent, group = Year, color = Year)) +
   scale_color_viridis() +
   theme_bw(base_size = 12) 
 ```
@@ -130,12 +137,19 @@ ggplot(data=sea_ice, mapping = aes(month_name, extent, color = year, size = 8)) 
 ####Extra Credit Animation
 ```{r, echo = TRUE}
 library(animation)
-oopt = ani.options(interval = 0.2, nmax = 100)
-for (i in 1980:2010) {
-  ggplot(data=sea_ice) +
-    geom_line(mapping = aes(month_name, extent, color = year, size = 8)) +
-    scale_color_viridis() +
-    theme_bw(base_size = 12)}
+library(viridis)
+
+saveGIF({
+  for(i in 1979:2016){
+    print(ggplot(sea_ice %>% filter(Year <= i),
+                   mapping = aes(x = Month_Name, y = Extent, group = Year, color = Year)) +
+                   geom_line() +
+                   scale_color_viridis() +
+                   theme_bw(base_size = 12) +
+                   labs(title = "Changes in Arctic Sea Ice Over Time", x = "Month", y = "Extent in 10^6 sq km") +
+                 annotate(x=10, y=2, geom="text", label = "Chart by Rachel LaBella", size = 3))}},
+interval=0.3, ani.width = 600, ani.height = 600)
+
 ```
 
 
