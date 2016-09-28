@@ -121,9 +121,23 @@ ggplot(sea_ice_season) +
 
 ####2.5) Last, make a line plot of sea ice by month. Gussy it up with colors by year, a different theme, and whatever other annotations, changes to axes, etc., you think best show the story of this data.
 ``` {r, echo = TRUE}
-ggplot(data=sea_ice) +
-  geom_line(mapping = aes(month_name, extent, color = year, size = 8)) +
+ggplot(data=sea_ice, mapping = aes(month_name, extent, color = year, size = 8)) +
+  geom_line() +
   scale_color_viridis() +
   theme_bw(base_size = 12) 
 ```
+
+####Extra Credit Animation
+```{r, echo = TRUE}
+library(animation)
+oopt = ani.options(interval = 0.2, nmax = 100)
+for (i in 1980:2010) {
+  ggplot(data=sea_ice) +
+    geom_line(mapping = aes(month_name, extent, color = year, size = 8)) +
+    scale_color_viridis() +
+    theme_bw(base_size = 12)}
+```
+
+
+
 
