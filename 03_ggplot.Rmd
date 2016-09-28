@@ -1,10 +1,79 @@
 ---
-title: 'Homework 2: Data Visualization'
-author: "Bill 607"
+title: 'Han_03'
+author: "Wanting Han"
 output: html_document
 ---
 
 **1)** Complete problems 10 and 17-18 on pg. 109-111. Use R where possible. Data sets (so you don’t have to type things in) are available at http://www.zoology.ubc.ca/~whitlock/ABD/teaching/datasets.html.
+
+*10.* a. Using an approximate method, provide a rough 95% confidence interval for the population mean.
+```{r 1.10.a}
+# read data
+genes_regulated <- read.csv("./data/04q11NumberGenesRegulated.csv")
+# make the full table
+genes_regulated_f <- rep(genes_regulated$ngenes, genes_regulated$frequency)
+# calculate sd
+genes_sd <- sd(genes_regulated_f)
+# calculate se
+genes_se <- genes_sd/sqrt(109)
+# calculate mean
+genes_mean <- mean(genes_regulated_f)
+# lower CI
+upper_CI <- genes_mean + 2*genes_se
+lower_CI <- genes_mean - 2*genes_se
+lower_CI
+upper_CI
+```
+* The 95% confidence interval is from 6.865242 to 9.758611.
+
+*b.* Provide an interpretation of the interval you calculated in part (a).
+
+* There is a 95% chance that the range between 6.87 and 9.76 contains the mean number of genes regulated by a grgulatory gene.
+
+*17.* The following figure is from the website of a U.S. national environmental laboratory. It displays sample mean concentrations, with 95% confidence intervals, of three radioactive substances. The text accompanying the figure explained that "the first plotted mean is 2.0 ± 1.1, so there is a 95% chance that the actual result is between 0.9 and 3.1, a 2.5% chance it is less than 0.9, and a 2.5% chance it is greater than 3.1." Is this a correcct interpretation of a confidence interval? Explain.
+
+* This is not a correct interpretation. Because the actual result is a certain number which we don't know. It is either between 0.9 and 3.1 or not. We couldn't use possibility to describe it.
+
+*18.* Amorphophallus johnsonii is a plant growing in West Africa, and it is better known as a "corpseflower." Its common name comes from the fact that when it flowers, it gives off a "powerful aroma of rotting fish and faeces" (Beath 1996). The flowers smell this way because their principal pollinators are carrion beetles, who are attracted to such a smell. Beath (1996) observed the number of carrion beetles (Phaeochrous amplus) that arrive per night to flowers of this species. The data are as follows:
+51, 45, 61, 76, 11, 117, 7, 132, 52, 149
+
+*a.* What is the mean and standard deviation of beetles per flower?
+```{r 18.a}
+beetles <- c(51, 45, 61, 76, 11, 117, 7, 132, 52, 149)
+mean_beetles <- mean(beetles)
+mean_beetles
+sd_beetles <- sd(beetles)
+sd_beetles
+```
+* The mean is 70.1, and the standard deviation is 48.50074.
+
+*b.* What is the standard error of this estimate of the mean?
+```{r 18.b}
+se_beetles <- sd_beetles/sqrt(length(beetles))
+se_beetles
+```
+* The standard error of this estimate of the mean is 15.33728.
+
+*c.* Give an approsimate 95% confidence interval of the mean. Provide lower and upper limits.
+```{r 18.c}
+lower_limits <- mean_beetles - 2*se_beetles
+lower_limits
+upper_limits <- mean_beetles + 2*se_beetles
+upper_limits
+```
+* The lower limits is 39.42544, and the upper limits is 100.7746.
+
+*d.* If you had been given 25 data points instead of 10, would you expect the mean to be greater, less than, or about the same as the mean of this sample?
+
+* This mean of 25 data might be the same as this sample.
+
+*e.* If you had been given 25 data points instead of 10, would you have expected the standard deviation to be greater, less than, or about the same as this sample?
+
+* The standard deviation of 25 data might be less than this sample.
+
+*f.* If you had been given 25 data points instead of 10, would you have expected the standard error of the mean to be greater, less than, or about the same as this sample?
+
+* The standard error of the mean will be less than this sample.
 
 **2)** The other day, [Dave Curran](https://twitter.com/iamreddave) using some of the code from our lab made a wonderful animation of change in arctic sea ice.
 
@@ -19,12 +88,81 @@ I'm providing you with a cleaned form of his data (his code is [here](https://gi
 
 **2.1)** Load the data using `readr` and make the `Month_Names` column into a factor whose levels are in order of month.
 
+```{r 2.1}
+library(readr)
+library(forcats)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+
+NH_data <- read_csv("./data/NH_seaice_extent_monthly_1978_2016.csv")
+NH_data$Month_Name <- factor(NH_data$Month_Name, levels = month.abb)
+NH_data$Month_Name
+```
+
 **2.2)** Make a boxplot showing the variability in sea ice extent every month.
+
+```{r 2.2}
+# plot base
+NH_base_plot <- ggplot(NH_data, 
+                       mapping = aes(x = Month_Name, y = Extent))
+
+# Boxplot
+NH_base_plot + geom_boxplot()
+
+```
 
 **2.3)** Use `dplyr` to get the annual minimum sea ice. Plot minimum ice by year, and add a trendline (either a smooth spline or a straight line).
 
+```{r 2.3}
+# using the data frame
+NH_data_min <- NH_data %>% 
+  # group by year
+  group_by(Year) %>%
+  # get the minimum extent of each year
+  summarize(Min_Extent= min(Extent)) %>%
+  ungroup
+NH_data_min
+
+# Plot it
+ggplot(NH_data_min, mapping = aes(x = Year, y = Min_Extent)) +
+  geom_point() +
+  # add a trendline
+  stat_smooth(method = "lm")
+```
+
 **2.4)** Plot sea ice by year, with different lines for different months. Then, add a new column (`mutate`!) using the ggplot2 function `cut_interval(Month, n=4)` - this will create four even bins. Seasons, if you will. Use `facet_wrap` on the same plot and split the plot into seasons.
 
+```{r 2.4}
+ggplot(data = NH_data) +
+  aes(x = Year, y = Extent, group = Month_Name, color = Month_Name) +
+  geom_line(size = 1)
+
+# cut into seasons
+NH_data_sea <- NH_data %>%
+  mutate(Season_Extent = cut_interval(Month, n = 4))
+
+# wrap the line plot
+NH_lin_season <- ggplot(data = NH_data_sea) +
+  aes(x = Year, y = Extent, group = Month_Name, color = Month_Name) +
+  geom_line(size = 1) +
+  facet_wrap(~Season_Extent)
+NH_lin_season
+```
+
 **2.5)** Last, make a line plot of sea ice by month. Gussy it up with colors by year, a different theme, and whatever other annotations, changes to axes, etc., you think best show the story of this data.
+
+```{r 2.5}
+NH_lin_month <- ggplot(data = NH_data) +
+  aes(x = Month_Name, y = Extent, group = Month_Name, color = Year) +
+  geom_line(size = 3)
+
+# change the theme
+library(ggthemes)
+
+NH_lin_month +
+  theme_fivethirtyeight()
+
+```
 
 **2.6 Extra Credit)** Make it animated.
