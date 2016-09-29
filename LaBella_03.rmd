@@ -22,8 +22,8 @@ gene_reg
 str(gene_reg)
 gene_reg %>%
   summarize(avg_ngenes = mean(ngenes))
-std.error <- (14.5)/sqrt(26)
-1.96*2.843683
+std.dev <- (14.5)/sqrt(26)
+std. error <- 1.96*2.843683
 ```
 ####b)
 I am 95% confident the true mean will fall between 20.073 and 8.927. (14.5 +/- 5.573) 20.072 is the upper limit, 8.927 is the lower limit of the confidence interval. 14.5 is the true mean of ngenes. 
