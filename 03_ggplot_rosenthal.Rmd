@@ -236,7 +236,11 @@ library(gganimate)
 ice_by_month_anim <- ggplot(data = ice, aes(frame = Year)) +
 geom_line(mapping = aes(x = Month_Name,
 #Here, cumulative = TRUE makes it so that each frame is ploted on top of the previous one,building the final plot 1 frame at a time.
-y = Extent, group = Year, color = Year, cumulative = TRUE))
+y = Extent, group = Year, color = Year, cumulative = TRUE)) +
+    #use color brewer for better color schemes
+scale_color_gradientn(colors = brewer.pal(9, "Reds")) +
+  #and who doesn't love excel?
+  theme_excel()
 
 gg_animate(ice_by_month_anim)
   ```
