@@ -1,0 +1,251 @@
+---
+title: "Homework_3"
+author: "Isaac Rosenthal"
+date: "September 23, 2016"
+output: html_document
+---
+
+
+#0. Load libraries in to R. make sure  working directory is set up as well.
+
+```{r}
+library(readr)
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(gganimate)
+library(ggthemes)
+library(viridis)
+library(RColorBrewer)
+#setwd("C:/irose/OneDrive/UMB/datasci/homework_2016/2016_homework_03_ggplot2") #only works the first time
+
+```
+
+#1.1 Using the an approximate method, provide a rough 95% confidience interval for the mean.
+
+
+First, we must load the data. I'll use the `readr` package for improved functionalty when importing csvs
+
+```{r}
+genes <- read_csv("./data/04q11NumberGenesRegulated.csv") #readr is bestr
+```
+
+#1a  
+Then, we need to find the standard deviation of the number of genes regulated by a regulatory gene. 
+
+```{r}
+std_dev <- sd(genes$frequency) #find the SD of the data
+std_dev
+```
+
+We can then calculate standard error by dividing the standard deviation by the square root of the number of samples
+
+```{r}
+std_err <- std_dev/(sqrt(length(genes$frequency))) #order of operations is important here, don't be a fool
+std_err
+```
+
+A simple approximation of the 95% confidence interval can be calculated by multiplying the standard error by 2.
+
+```{r}
+std_err * 2
+```
+
+
+#1.2 provide an interpretaton of this result.
+A 95% confidence interval of 1.61 means that we are 95% confident that our samples, plus or minus the confidence interval (`r std_err * 2`)  will contain the true number of genes regulated per regulatory gene.
+
+
+# 17
+This is not the correct interpretation. a 95% confidence interval says nothing about probability, only about our confidence in our data. In this case, the correct interpretation would be that we are 95% confident that the true value of the mean is contained in the range of 2.0 ± 1.1.
+
+# 18.1 What is the mean and standard deviation?
+
+First, create a vector with the data.
+
+```{r}
+beetles <- c(51, 45, 61, 76, 11, 117, 7, 132, 52, 149)
+```
+
+
+Then, these summary data are straightforward to calculate, we can use the `mean()` and `sd()` functions.
+```{r}
+mean(beetles)
+sd(beetles)
+```
+
+##18.2 What is the standard error?
+using the same formula described inm question 1, we can calculate standard error as follows:
+```{r}
+std_error <- sd(beetles)/(sqrt(length(beetles))) #sd/sqrt of number of samples
+std_error
+```
+
+##18.3 Find the 95% confidence interval
+
+we can approxomate the 95% confidence interval by multiplying the SE by 2.
+```{r}
+CI <- std_err * 2
+CI
+```
+
+The upper limit is `r mean(beetles) -CI` to `r mean(beetles) + CI`.
+
+##18.4 
+
+I have no reason to think the mean would change, assuming the extra data points were all gathered from the same set of flowers on teh same night, the same way, etc.
+
+##18.5
+I would not expect the standard deviation to change in a predictable way with a larger sample size, as it describes the spread of the data. If the data is spread out (or highly variable), the standard deviation will be large no matter the sample size. I would, however, expect my standard deviation to be more accurate as my sample size increases.
+
+##18.6
+The standard error shoudl decrease as sample size increases. A higher sample size means we can more precisely estimate the mean, and the standard error is a quantifiction of this precision. A smaller standard error means higher precision.
+
+# Part 2
+
+##2.1
+First, load the data into R using `readr`
+
+```{r}
+ice <- read_csv("./data/NH_seaice_extent_monthly_1978_2016.csv")
+str(ice)
+```
+
+The `str()` command reveals that `Month_Name` has the type character. we want it as a factor. To convert it, we need to use the `forcats` library. There are a few steps to take first, however. 
+
+First, in preparation for the conversion to factor, we should arrange the data so that it is in order by month. This will put the months in the correct order when we convert them to a factor. Once they are arranged in the correct order by month number, we can use the `fct_inorder()` function to convert `Month_Name` to a factor, and to order them in order of appearance (which we arranged in the previous step).
+
+```{r}
+ice <- ice %>%
+  #arrange by month number
+  arrange(Month)
+ice <- ice %>%
+  #convert Month_Name to a factor and put it in in the order we have set
+mutate(Month_Name = fct_inorder(Month_Name))
+str(ice)
+levels(ice$Month_Name)
+```
+
+
+
+Now we see that the `Month_Name` column is a factor, with 12 levels
+
+##2.2 Time for a boxplot
+
+we can use a boxplot to quickly visualize some summary statistics. `ggplot` makes this easy and fun!
+
+```{r}
+#the plot will be called ice_box, and will use the ice data frame
+ice_box <- ggplot(data = ice) +
+#make a box plot where the x axis is the month name and the y is the extent of the sea ice
+  geom_boxplot(mapping = aes(x = Month_Name, y = Extent))
+ice_box
+```
+
+
+##2.3
+Now we will use `dplyr` to find the annual minimum sea ice.
+
+```{r}
+ice_min <- ice %>%
+  #group by year so we can find the minimum value of each year
+group_by(Year) %>%
+ #use min function within summarise to create a table of years and their minimum ice extent.
+summarise(Minimum_Extent = min(Extent))
+```
+
+We can also graph this with `ggplot` with a trendline
+
+```{r}
+#take the summary data
+ice_min_plot <- ggplot(dat = ice_min, 
+                       mapping = aes(x = Year, y = Minimum_Extent)) +
+  #make a plot
+  geom_point() +
+  #add a linear trendline
+  stat_smooth(method = lm)
+ice_min_plot
+```
+
+##2.4 
+It is also possible to separate the data out by month.
+
+```{r}
+
+#the plot will be called ice_month, and will use the ice data frame
+ice_month <- ggplot(data = ice) +
+  #make a line graph where the x axis is the year and the y is the extent of the sea ice, with 1 line for each month
+  geom_line(mapping = aes(x = Year,
+                             y = Extent,
+                             group = Month,
+                             color = Month))
+ice_month
+```
+
+This monthly graph is busy, hideous, and frankly needs improvement. One way to do this is by binning it by season!
+
+```{r}
+ice <- ice %>%
+#This creates 4 equal sized bins of months, which roughly correspond to the seasons. make sure you have the forcats library installed!
+mutate(Season_No = cut_interval(Month, n = 4))
+
+```
+
+```{r}
+#make a plot using the ice table as a data source
+ice_season <- ggplot(data = ice) +
+  #its a line graph, grouped and colored by month in order to increase readability
+geom_line(mapping = aes(x = Year,
+y = Extent, group = Month, color = Month_Name)) +
+  #this then splits it up into one panel per season, each containint 4 months.
+facet_wrap(~Season_No)
+
+ice_season
+```
+
+##2.5
+Now, I will make a plot of sea ice by month, with some bells and whistles
+
+```{r}
+#New plot, same data we've been using
+ice_by_month <- ggplot(data = ice) +
+  #This time group by month name and plot extent vs year. Also, change color based on year.
+geom_line(mapping = aes(x = Month_Name,
+y = Extent, group = Year, color = Year)) +
+  #use color brewer for better color schemes
+scale_color_gradientn(colors = brewer.pal(9, "Reds")) +
+  #and who doesn't love excel?
+  theme_excel()
+
+
+ice_by_month
+
+
+
+```
+
+ Now I will animate it!!
+ 
+```{r, fig.show="animate"}
+#NOTE: this requires the gganimate library, which must be installed using devtools::{install.pacages("gganimate"}. 
+#It is also required that you have ffmpeg and imagemagick installed on your computer
+library(gganimate)
+
+#gganimate works within normal ggplot syntax. here, the frame argument is the variable of which each value will act as a frame in the animation, in this case each year will be a new frame in the animation.
+ice_by_month_anim <- ggplot(data = ice, aes(frame = Year)) +
+geom_line(mapping = aes(x = Month_Name,
+#Here, cumulative = TRUE makes it so that each frame is ploted on top of the previous one,building the final plot 1 frame at a time.
+y = Extent, group = Year, color = Year, cumulative = TRUE)) +
+    #use color brewer for better color schemes
+scale_color_gradientn(colors = brewer.pal(9, "Reds")) +
+  #and who doesn't love excel?
+  theme_excel()
+
+gg_animate(ice_by_month_anim)
+  ```
+
+
+
+
+
